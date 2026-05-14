@@ -1,0 +1,374 @@
+﻿@model SmartMarkMVC.Models.TakeAttendanceViewModel
+@{
+    ViewData["Title"] = "Take Attendance";
+    ViewData["ActivePage"] = "Attendance";
+    Layout = "_Layout";
+    ViewBag.SidebarRole = "teacher";
+}
+
+<div class="dash-wrapper">
+    @await Html.PartialAsync("_Sidebar")
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <a href="@Url.Action("AttendanceSessions","Teacher", new { subjectId = Model.SubjectId })" class="back-link">
+                    ← Back to Sessions
+                </a>
+                <h2 class="page-title">Mark Attendance</h2>
+                <p class="page-sub">
+    @Model.SubjectName · @Model.SessionDate.ToString("dddd, dd MMM yyyy")
+    @if (Model.IsEditing)
+    {
+        <span style="background:#FEF3C7;color:#92400E;font-size:11px;
+                     font-weight:600;padding:2px 10px;border-radius:20px;margin-left:8px;">
+            Editing Mode
+        </span>
+    }
+</p>
+            </div>
+        </header>
+
+        <form method="post" action="@Url.Action("SaveAttendance","Teacher")">
+            <input type="hidden" name="sessionId" value="@Model.SessionId" />
+
+            <div class="att-card">
+    <div class="att-card-header">
+        <div>
+            <h3 class="att-card-title">Students (@Model.Students.Count enrolled)</h3>
+            <p class="att-card-sub">Tap to select · Long press to remove student</p>
+        </div>
+        <div class="quick-btns">
+            <button type="button" class="quick-btn" onclick="markAll(true)">✓ All Present</button>
+            <button type="button" class="quick-btn absent-quick" onclick="markAll(false)">✗ All Absent</button>
+        </div>
+    </div>
+
+    @* Bulk action bar — hidden until selection *@
+    <div class="bulk-bar" id="bulkBar">
+        <span class="bulk-count" id="bulkCount">0 selected</span>
+        <div class="bulk-actions">
+            <button type="button" class="bulk-present" onclick="bulkMark(true)">
+                ✓ Mark Selected Present
+            </button>
+            <button type="button" class="bulk-absent" onclick="bulkMark(false)">
+                ✗ Mark Selected Absent
+            </button>
+            <button type="button" class="bulk-clear" onclick="clearSelection()">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="student-list">
+        @foreach (var s in Model.Students)
+        {
+            <div class="student-row @(s.IsPresent ? "present-row" : "absent-row")"
+                 id="row-@s.StudentId"
+                 data-student-id="@s.StudentId"
+                 onclick="toggleSelect(@s.StudentId)"
+                 oncontextmenu="startLongPress(event, @s.StudentId)"
+                 onmousedown="startHold(@s.StudentId)"
+                 onmouseup="cancelHold()"
+                 onmouseleave="cancelHold()"
+                 ontouchstart="startHold(@s.StudentId)"
+                 ontouchend="cancelHold()">
+
+                <div class="select-check" id="sel-@s.StudentId">
+                    <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+                        <path d="M3 8l4 4 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="student-avatar" id="av-@s.StudentId">
+                    @(s.StudentName.Length >= 2 ? s.StudentName[..2].ToUpper() : s.StudentName.ToUpper())
+                </div>
+                <div class="student-info">
+                    <p class="student-name">@s.StudentName</p>
+                    <p class="student-roll">@s.RollNumber</p>
+                </div>
+                <label class="toggle-wrap" onclick="event.stopPropagation()">
+                    <input type="checkbox"
+                           name="presentStudentIds"
+                           value="@s.StudentId"
+                           class="att-checkbox"
+                           id="cb-@s.StudentId"
+                           onchange="updateRow(@s.StudentId, this.checked)"
+                           @(s.IsPresent ? "checked" : "") />
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label" id="lbl-@s.StudentId"
+                          style="color:@(s.IsPresent ? "#059669" : "#E24B4A")">
+                        @(s.IsPresent ? "Present" : "Absent")
+                    </span>
+                </label>
+            </div>
+        }
+    </div>
+
+    <div class="att-footer">
+        <div class="att-summary">
+            <span id="presentCount">@Model.Students.Count(s => s.IsPresent)</span> / @Model.Students.Count present
+        </div>
+        <button type="submit" class="save-btn">💾 Save Attendance</button>
+    </div>
+</div>
+
+        </form>
+        @* Delete confirmation modal *@
+<div class="delete-modal-overlay" id="deleteModal">
+    <div class="delete-modal">
+        <div class="delete-icon">🗑️</div>
+        <h3 class="delete-title">Remove Student?</h3>
+        <p class="delete-sub">
+            <strong id="deleteStudentName"></strong> will be removed from this subject.
+            This cannot be undone.
+        </p>
+        <div class="delete-btns">
+            <button type="button" class="delete-cancel" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="delete-confirm" onclick="confirmDelete()">Remove</button>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" method="post">
+    <input type="hidden" id="deleteStudentId" name="studentId" />
+</form>
+    </main>
+</div>
+
+@section Styles {
+<style>
+* { box-sizing:border-box;margin:0;padding:0; }
+body { font-family:'Poppins',sans-serif;background:#F3F4FA;min-height:100vh; }
+.dash-wrapper{display:flex;min-height:100vh;}
+.sidebar{width:240px;flex-shrink:0;background:#fff;border-right:1px solid #EBEBF5;display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;bottom:0;}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid #F0EFF8;}
+.sb-logo-icon{width:40px;height:40px;background:#EDE8FF;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.sb-brand{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:#3D2F8E;}
+.sb-brand span{color:#7C4DFF;}
+.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;}
+.nav-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;text-decoration:none;color:#6B7280;font-size:14px;font-weight:500;transition:background .15s,color .15s;}
+.nav-link:hover{background:#F5F3FF;color:#7C4DFF;}
+.nav-link.active{background:#EDE8FF;color:#7C4DFF;font-weight:600;}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:16px 20px 0;border-top:1px solid #F0EFF8;margin-top:auto;}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C4DFF,#B47FFF);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.teacher-av{background:linear-gradient(135deg,#1D4ED8,#60A5FA)!important;}
+.user-name{font-size:13px;font-weight:600;color:#1A1235;}
+.user-role{font-size:11px;color:#9899B8;}
+.logout-btn{margin-left:auto;color:#9899B8;text-decoration:none;display:flex;transition:color .15s;}
+.logout-btn:hover{color:#E24B4A;}
+.main-content{margin-left:240px;flex:1;padding:28px 32px;animation:fadeIn .5s ease both;}
+@@keyframes fadeIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+.back-link{color:#7C4DFF;text-decoration:none;font-size:13px;font-weight:500;display:inline-block;margin-bottom:8px;}
+.back-link:hover{text-decoration:underline;}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;}
+.page-title{font-size:22px;font-weight:700;color:#1A1235;}
+.page-sub{font-size:12px;color:#9899B8;margin-top:2px;}
+.att-card{background:#fff;border-radius:20px;border:1px solid #EBEBF5;overflow:hidden;}
+.att-card-header{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid #F0EFF8;}
+.att-card-title{font-size:16px;font-weight:700;color:#1A1235;margin-bottom:4px;}
+.att-card-sub{font-size:12px;color:#9899B8;}
+.quick-btns{display:flex;gap:10px;}
+.quick-btn{background:#D1FAE5;color:#065F46;border:none;padding:8px 14px;border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;}
+.quick-btn:hover{background:#059669;color:#fff;}
+.absent-quick{background:#FEE2E2;color:#991B1B;}
+.absent-quick:hover{background:#E24B4A;color:#fff;}
+.student-list{display:flex;flex-direction:column;}
+.student-row{display:flex;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid #F8F8FC;transition:background .15s;}
+.student-row:hover{background:#FAFAFA;}
+.student-row.present-row{background:#F0FDF4;}
+.student-row.absent-row{background:#FFF8F8;}
+.student-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#7C4DFF,#B47FFF);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.student-info{flex:1;}
+.student-name{font-size:14px;font-weight:600;color:#1A1235;margin-bottom:2px;}
+.student-roll{font-size:11px;color:#9899B8;}
+.toggle-wrap{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.att-checkbox{display:none;}
+.toggle-slider{width:44px;height:24px;background:#E5E7EB;border-radius:12px;position:relative;transition:background .2s;flex-shrink:0;}
+.toggle-slider::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.15);}
+.att-checkbox:checked + .toggle-slider{background:#059669;}
+.att-checkbox:checked + .toggle-slider::after{transform:translateX(20px);}
+.toggle-label{font-size:13px;font-weight:600;color:#6B7280;min-width:50px;}
+.att-footer{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-top:1px solid #F0EFF8;}
+.att-summary{font-size:14px;font-weight:600;color:#374151;}
+.save-btn{background:linear-gradient(135deg,#7C4DFF,#9B6FEF);color:#fff;border:none;padding:12px 28px;border-radius:12px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.save-btn:hover{opacity:.88;}
+.bulk-bar{background:#1A1235;border-radius:14px;padding:12px 20px;display:none;
+    align-items:center;justify-content:space-between;gap:16px;margin:0 0 2px;}
+.bulk-bar.visible{display:flex;}
+.bulk-count{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;}
+.bulk-actions{display:flex;gap:10px;}
+.bulk-present{background:#059669;color:#fff;border:none;padding:8px 16px;
+    border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;
+    font-weight:600;cursor:pointer;transition:opacity .15s;}
+.bulk-present:hover{opacity:.88;}
+.bulk-absent{background:#E24B4A;color:#fff;border:none;padding:8px 16px;
+    border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;
+    font-weight:600;cursor:pointer;transition:opacity .15s;}
+.bulk-absent:hover{opacity:.88;}
+.bulk-clear{background:rgba(255,255,255,.15);color:#fff;border:none;
+    padding:8px 16px;border-radius:10px;font-family:'Poppins',sans-serif;
+    font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;}
+.bulk-clear:hover{background:rgba(255,255,255,.25);}
+.student-row{cursor:pointer;user-select:none;}
+.selected-row{background:#EDE8FF !important;border:1.5px solid #7C4DFF;}
+.select-check{width:22px;height:22px;border-radius:50%;border:2px solid #D1D5DB;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    background:#fff;transition:background .15s,border-color .15s;}
+.sel-active{background:#7C4DFF !important;border-color:#7C4DFF !important;}
+
+.delete-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);
+    z-index:2000;display:none;align-items:center;justify-content:center;}
+.delete-modal-overlay.visible{display:flex;}
+.delete-modal{background:#fff;border-radius:20px;padding:32px 28px;
+    max-width:340px;width:90%;text-align:center;animation:popIn .2s ease;}
+@@keyframes popIn{0%{transform:scale(.9);opacity:0}100%{transform:scale(1);opacity:1}}
+.delete-icon{font-size:36px;margin-bottom:12px;}
+.delete-title{font-size:18px;font-weight:700;color:#1A1235;margin-bottom:8px;}
+.delete-sub{font-size:13px;color:#6B7280;line-height:1.5;margin-bottom:24px;}
+.delete-btns{display:flex;gap:12px;}
+.delete-cancel{flex:1;background:#F3F4FA;color:#374151;border:none;padding:12px;
+    border-radius:12px;font-family:'Poppins',sans-serif;font-size:14px;
+    font-weight:600;cursor:pointer;}
+.delete-confirm{flex:1;background:#E24B4A;color:#fff;border:none;padding:12px;
+    border-radius:12px;font-family:'Poppins',sans-serif;font-size:14px;
+    font-weight:600;cursor:pointer;}
+</style>
+}
+
+@section Scripts {
+<script>
+// ── State ──────────────────────────────────────────
+var selectedIds = new Set();
+var holdTimer   = null;
+
+// ── Toggle row attendance ──────────────────────────
+function updateRow(studentId, isPresent) {
+    var row = document.getElementById('row-' + studentId);
+    var lbl = document.getElementById('lbl-' + studentId);
+    row.classList.remove('present-row','absent-row');
+    row.classList.add(isPresent ? 'present-row' : 'absent-row');
+    lbl.textContent = isPresent ? 'Present' : 'Absent';
+    lbl.style.color = isPresent ? '#059669' : '#E24B4A';
+    updateCount();
+}
+
+// ── Select / deselect a row ────────────────────────
+function toggleSelect(id) {
+    var row    = document.getElementById('row-' + id);
+    var selBox = document.getElementById('sel-' + id);
+    if (selectedIds.has(id)) {
+        selectedIds.delete(id);
+        row.classList.remove('selected-row');
+        selBox.classList.remove('sel-active');
+    } else {
+        selectedIds.add(id);
+        row.classList.add('selected-row');
+        selBox.classList.add('sel-active');
+    }
+    updateBulkBar();
+}
+
+// ── Bulk mark selected ─────────────────────────────
+function bulkMark(isPresent) {
+    selectedIds.forEach(function(id) {
+        var cb = document.getElementById('cb-' + id);
+        if (cb) {
+            cb.checked = isPresent;
+            updateRow(id, isPresent);
+        }
+    });
+    clearSelection();
+}
+
+// ── Mark all ──────────────────────────────────────
+function markAll(isPresent) {
+    document.querySelectorAll('.att-checkbox').forEach(function(cb) {
+        cb.checked = isPresent;
+        updateRow(parseInt(cb.value), isPresent);
+    });
+    clearSelection();
+}
+
+// ── Clear selection ────────────────────────────────
+function clearSelection() {
+    selectedIds.forEach(function(id) {
+        var row    = document.getElementById('row-' + id);
+        var selBox = document.getElementById('sel-' + id);
+        if (row)    row.classList.remove('selected-row');
+        if (selBox) selBox.classList.remove('sel-active');
+    });
+    selectedIds.clear();
+    updateBulkBar();
+}
+
+// ── Update bulk bar visibility ─────────────────────
+function updateBulkBar() {
+    var bar   = document.getElementById('bulkBar');
+    var count = document.getElementById('bulkCount');
+    if (selectedIds.size > 0) {
+        bar.classList.add('visible');
+        count.textContent = selectedIds.size + ' selected';
+    } else {
+        bar.classList.remove('visible');
+    }
+}
+
+// ── Update present count ───────────────────────────
+function updateCount() {
+    var count = document.querySelectorAll('.att-checkbox:checked').length;
+    document.getElementById('presentCount').textContent = count;
+}
+
+// ── Long press to delete ───────────────────────────
+function startHold(studentId) {
+    cancelHold();
+    holdTimer = setTimeout(function() {
+        showDeleteModal(studentId);
+    }, 800); // 800ms hold
+}
+
+function cancelHold() {
+    if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+    }
+}
+
+function startLongPress(e, studentId) {
+    e.preventDefault(); // prevent right-click menu
+    showDeleteModal(studentId);
+}
+
+// ── Delete modal ──────────────────────────────────
+function showDeleteModal(studentId) {
+    var name = document.querySelector('#row-' + studentId + ' .student-name').textContent;
+    document.getElementById('deleteStudentName').textContent = name;
+    document.getElementById('deleteStudentId').value = studentId;
+    document.getElementById('deleteModal').classList.add('visible');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('visible');
+}
+
+function confirmDelete() {
+    var form = document.getElementById('deleteForm');
+
+    if (!form) {
+        console.error("deleteForm not found");
+        return;
+    }
+
+    form.action = '/Teacher/RemoveStudent';
+    form.submit();
+}
+
+// ── Init ──────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.att-checkbox').forEach(function(cb) {
+        if (cb.checked) updateRow(parseInt(cb.value), true);
+    });
+    updateCount();
+});
+</script>
+}

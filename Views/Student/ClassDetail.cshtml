@@ -1,0 +1,576 @@
+@model SmartMarkMVC.Models.ClassDetailViewModel
+@{
+    ViewData["Title"] = Model.Class.Name;
+    ViewData["ActivePage"] = "Attendance";
+    Layout = "_Layout";
+    ViewBag.SidebarRole = "student";
+    var cls = Model.Class;
+    string barColor = cls.AttendancePercent >= 75 ? "#059669" : cls.AttendancePercent >= 60 ? "#E07C1A" : "#E24B4A";
+    string statusText = cls.AttendancePercent >= 75 ? "Good Standing" : "At Risk";
+}
+
+<div class="detail-wrapper">
+    @await Html.PartialAsync("_Sidebar")
+
+    <main class="main-content">
+        <div class="class-hero" style="background:@cls.GradientCss">
+            <div class="hero-deco-1"></div>
+            <div class="hero-deco-2"></div>
+            <a href="@Url.Action("Dashboard", "Student")" class="back-btn js-nav">
+                <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M10 13L5 8l5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                Back to Dashboard
+            </a>
+            <h1 class="hero-title">@cls.Name</h1>
+            <p class="hero-teacher">Instructor: @cls.Teacher</p>
+            <div class="hero-pills">
+                <span class="hero-pill">@cls.Code</span>
+                <span class="hero-pill">Spring 2026</span>
+                <span class="hero-pill" style="background:@(cls.AttendancePercent >= 75 ? "rgba(5,150,105,.3)" : "rgba(226,75,74,.3)")">
+                    @statusText
+                </span>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+
+            <!-- Attendance Records -->
+            <section class="detail-card attendance-card">
+                <div class="card-title-row">
+                    <h2 class="card-title">Attendance History</h2>
+                    <span class="card-badge" style="background:#EDE8FF;color:#7C4DFF">
+                        @Model.AttendanceRecords.Count sessions
+                    </span>
+                </div>
+
+                @if (!Model.AttendanceRecords.Any())
+                {
+                    <p style="color:#9899B8;font-size:13px;text-align:center;padding:20px 0;">
+                        No attendance records yet.
+                    </p>
+                }
+                else
+                {
+                    <div class="attendance-list">
+                        @foreach (var r in Model.AttendanceRecords)
+                        {
+                            <div class="att-item">
+                                <div class="att-check">
+                                    @if (r.IsPresent)
+                                    {
+                                        <svg viewBox="0 0 16 16" fill="none" width="22" height="22">
+                                            <circle cx="8" cy="8" r="7" fill="#059669" opacity="0.15" stroke="#059669" stroke-width="1.5" />
+                                            <path d="M5 8l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    }
+                                    else
+                                    {
+                                        <svg viewBox="0 0 16 16" fill="none" width="22" height="22">
+                                            <circle cx="8" cy="8" r="7" fill="#E24B4A" opacity="0.15" stroke="#E24B4A" stroke-width="1.5" />
+                                            <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" />
+                                        </svg>
+                                    }
+                                </div>
+                                <div class="att-info">
+                                    <p class="att-date">@r.SessionDate.ToString("dddd, dd MMM yyyy")</p>
+                                    @if (r.IsPresent && r.DurationMinutes > 0)
+                                    {
+                                        <p class="att-duration">Duration: @r.DurationMinutes mins</p>
+                                    }
+                                </div>
+                                <span class="att-status @(r.IsPresent ? "present-status" : "absent-status")">
+                                    @(r.IsPresent ? "Present" : "Absent")
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <!-- Attendance Summary -->
+            <section class="detail-card summary-card">
+                <div class="card-title-row"><h2 class="card-title">Attendance Summary</h2></div>
+                <div class="att-big" style="color:@barColor">@cls.AttendancePercent%</div>
+                <p class="att-sub">Overall Attendance</p>
+
+                <div class="att-bar-wrap">
+                    <div class="att-bar-track">
+                        <div class="att-bar-fill" style="width:@(cls.AttendancePercent)%;background:@barColor"></div>
+                    </div>
+                </div>
+
+                <div class="att-threshold @(cls.AttendancePercent >= 75 ? "good" : "danger")">
+                    @if (cls.AttendancePercent >= 75)
+                    {
+                        <span>✓ Above 75% requirement</span>
+                    }
+                    else
+                    {
+                        int needed = cls.TotalSessions == 0 ? 0 :
+                        (int)Math.Ceiling((0.75 * cls.TotalSessions - cls.AttendedSessions) / 0.25);
+                        <span>⚠ Need @needed more classes to reach 75%</span>
+                    }
+                </div>
+
+                <div class="att-stats">
+                    <div class="att-stat-row">
+                        <span class="att-stat-lbl">Total Sessions</span>
+                        <span class="att-stat-val">@cls.TotalSessions</span>
+                    </div>
+                    <div class="att-stat-row">
+                        <span class="att-stat-lbl">Present</span>
+                        <span class="att-stat-val" style="color:#059669">@cls.AttendedSessions</span>
+                    </div>
+                    <div class="att-stat-row">
+                        <span class="att-stat-lbl">Absent</span>
+                        <span class="att-stat-val" style="color:#E24B4A">@(cls.TotalSessions - cls.AttendedSessions)</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<div class="transition-overlay" id="overlay"></div>
+
+@section Styles {
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins',sans-serif;
+            background: #F3F4FA;
+            min-height: 100vh;
+        }
+
+        .detail-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            background: #fff;
+            border-right: 1px solid #EBEBF5;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 20px 24px;
+            border-bottom: 1px solid #F0EFF8;
+        }
+
+        .sb-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: #EDE8FF;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sb-brand {
+            font-family: 'Nunito',sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: #3D2F8E;
+        }
+
+            .sb-brand span {
+                color: #7C4DFF;
+            }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #6B7280;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background .15s,color .15s;
+        }
+
+            .nav-link:hover {
+                background: #F5F3FF;
+                color: #7C4DFF;
+            }
+
+            .nav-link.active {
+                background: #EDE8FF;
+                color: #7C4DFF;
+                font-weight: 600;
+            }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 20px 0;
+            border-top: 1px solid #F0EFF8;
+            margin-top: auto;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg,#7C4DFF,#B47FFF);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1A1235;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: #9899B8;
+        }
+
+        .logout-btn {
+            margin-left: auto;
+            color: #9899B8;
+            text-decoration: none;
+            display: flex;
+            transition: color .15s;
+        }
+
+            .logout-btn:hover {
+                color: #E24B4A;
+            }
+
+        .main-content {
+            margin-left: 240px;
+            flex: 1;
+            padding-bottom: 32px;
+            animation: fadeInMain .5s ease both;
+        }
+
+        @@keyframes fadeInMain {
+            0% {
+                opacity: 0;
+                transform: translateY(12px)
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .class-hero {
+            padding: 28px 32px 32px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+
+        .hero-deco-1 {
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.1);
+            bottom: -80px;
+            right: -60px;
+        }
+
+        .hero-deco-2 {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.07);
+            top: -40px;
+            left: 40%;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255,255,255,.8);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+            transition: color .15s;
+        }
+
+            .back-btn:hover {
+                color: #fff;
+            }
+
+        .hero-title {
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            position: relative;
+            z-index: 2;
+            margin-bottom: 6px;
+        }
+
+        .hero-teacher {
+            font-size: 14px;
+            color: rgba(255,255,255,.8);
+            position: relative;
+            z-index: 2;
+            margin-bottom: 16px;
+        }
+
+        .hero-pills {
+            display: flex;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+            flex-wrap: wrap;
+        }
+
+        .hero-pill {
+            font-size: 11px;
+            color: rgba(255,255,255,.9);
+            background: rgba(255,255,255,.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 20px;
+            padding: 0 32px;
+        }
+
+        .detail-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 22px 24px;
+            border: 1px solid #EBEBF5;
+        }
+
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1A1235;
+        }
+
+        .card-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .attendance-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .att-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 14px;
+            background: #FAFAFA;
+            transition: background .15s;
+        }
+
+            .att-item:hover {
+                background: #F5F3FF;
+            }
+
+        .att-check {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .att-info {
+            flex: 1;
+        }
+
+        .att-date {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1A1235;
+            margin-bottom: 2px;
+        }
+
+        .att-duration {
+            font-size: 11px;
+            color: #9899B8;
+        }
+
+        .att-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .present-status {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .absent-status {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .att-big {
+            font-size: 52px;
+            font-weight: 900;
+            font-family: 'Nunito',sans-serif;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .att-sub {
+            font-size: 12px;
+            color: #9899B8;
+            margin-bottom: 16px;
+        }
+
+        .att-bar-wrap {
+            margin-bottom: 16px;
+        }
+
+        .att-bar-track {
+            height: 8px;
+            background: #F0EFF8;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .att-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width .8s ease;
+        }
+
+        .att-threshold {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+            .att-threshold.good {
+                background: #D1FAE5;
+                color: #065F46;
+            }
+
+            .att-threshold.danger {
+                background: #FEE2E2;
+                color: #991B1B;
+            }
+
+        .att-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .att-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #F0EFF8;
+        }
+
+            .att-stat-row:last-child {
+                border-bottom: none;
+            }
+
+        .att-stat-lbl {
+            font-size: 13px;
+            color: #6B7280;
+        }
+
+        .att-stat-val {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1A1235;
+        }
+
+        .transition-overlay {
+            position: fixed;
+            inset: 0;
+            background: #7C4DFF;
+            transform: scaleY(0);
+            transform-origin: bottom;
+            z-index: 1000;
+            transition: transform .5s cubic-bezier(.76,0,.24,1);
+        }
+
+            .transition-overlay.active {
+                transform: scaleY(1);
+            }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.js-nav').forEach(function(el){
+            el.addEventListener('click',function(e){
+                e.preventDefault();
+                var href=this.getAttribute('href');
+                document.getElementById('overlay').classList.add('active');
+                setTimeout(function(){window.location.href=href;},520);
+            });
+        });
+    </script>
+}

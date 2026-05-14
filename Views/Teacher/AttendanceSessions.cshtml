@@ -1,0 +1,125 @@
+﻿@model List<SmartMarkMVC.Models.AttendanceSessionViewModel>
+@{
+    ViewData["Title"] = "Attendance Sessions";
+    ViewData["ActivePage"] = "Attendance";
+    Layout = "_Layout";
+    ViewBag.SidebarRole = "teacher";
+    int subjectId = (int)ViewBag.SubjectId;
+}
+
+<div class="dash-wrapper">
+    @await Html.PartialAsync("_Sidebar")
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <a href="@Url.Action("Dashboard","Teacher")" class="back-link">← Back to Dashboard</a>
+                <h2 class="page-title">Attendance Sessions</h2>
+                <p class="page-sub">@(Model.Any() ? Model.First().SubjectName : "Subject")</p>
+            </div>
+            <div class="topbar-right">
+                <a href="@Url.Action("StartSession","Teacher", new { subjectId })" class="start-btn">
+                    ▶ Start New Session
+                </a>
+            </div>
+        </header>
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <p>No attendance sessions yet for this subject.</p>
+                <a href="@Url.Action("StartSession","Teacher", new { subjectId })" class="start-btn">
+                    ▶ Start First Session
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="session-list">
+                @foreach (var s in Model)
+                {
+                    string statusColor = s.Status == "Open" ? "#059669" : "#6B7280";
+                    string statusBg    = s.Status == "Open" ? "#D1FAE5" : "#F3F4FA";
+                    int pct = s.TotalStudents == 0 ? 0 : (int)((s.PresentCount * 100.0) / s.TotalStudents);
+
+                    <div class="session-row">
+                        <div class="session-date-col">
+                            <p class="session-date">@s.SessionDate.ToString("dd MMM yyyy")</p>
+                            <p class="session-time">@s.SessionDate.ToString("hh:mm tt")</p>
+                        </div>
+                        <div class="session-info">
+                            <div class="att-mini-bar">
+                                <div class="att-mini-fill" style="width:@pct%;background:@(pct >= 75 ? "#059669" : "#E07C1A")"></div>
+                            </div>
+                            <p class="session-stat">@s.PresentCount / @s.TotalStudents present (@pct%)</p>
+                        </div>
+                        <span class="session-status" style="background:@statusBg;color:@statusColor">
+                            @s.Status
+                        </span>
+                        @if (s.Status == "Open")
+                        {
+                            <a href="@Url.Action("TakeAttendance","Teacher", new { sessionId = s.SessionId })" class="manage-btn">
+                                Mark Attendance
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("TakeAttendance","Teacher", new { sessionId = s.SessionId })" class="view-btn">
+                                View / Edit
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </main>
+</div>
+
+@section Styles {
+<style>
+* { box-sizing:border-box;margin:0;padding:0; }
+body { font-family:'Poppins',sans-serif;background:#F3F4FA;min-height:100vh; }
+.dash-wrapper{display:flex;min-height:100vh;}
+.sidebar{width:240px;flex-shrink:0;background:#fff;border-right:1px solid #EBEBF5;display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;bottom:0;}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid #F0EFF8;}
+.sb-logo-icon{width:40px;height:40px;background:#EDE8FF;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.sb-brand{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:#3D2F8E;}
+.sb-brand span{color:#7C4DFF;}
+.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;}
+.nav-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;text-decoration:none;color:#6B7280;font-size:14px;font-weight:500;transition:background .15s,color .15s;}
+.nav-link:hover{background:#F5F3FF;color:#7C4DFF;}
+.nav-link.active{background:#EDE8FF;color:#7C4DFF;font-weight:600;}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:16px 20px 0;border-top:1px solid #F0EFF8;margin-top:auto;}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C4DFF,#B47FFF);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.teacher-av{background:linear-gradient(135deg,#1D4ED8,#60A5FA)!important;}
+.user-name{font-size:13px;font-weight:600;color:#1A1235;}
+.user-role{font-size:11px;color:#9899B8;}
+.logout-btn{margin-left:auto;color:#9899B8;text-decoration:none;display:flex;transition:color .15s;}
+.logout-btn:hover{color:#E24B4A;}
+.main-content{margin-left:240px;flex:1;padding:28px 32px;animation:fadeIn .5s ease both;}
+@@keyframes fadeIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+.back-link{color:#7C4DFF;text-decoration:none;font-size:13px;font-weight:500;display:inline-block;margin-bottom:8px;}
+.back-link:hover{text-decoration:underline;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.page-title{font-size:22px;font-weight:700;color:#1A1235;}
+.page-sub{font-size:12px;color:#9899B8;margin-top:2px;}
+.start-btn{background:linear-gradient(135deg,#059669,#34D399);color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:10px 20px;border-radius:12px;transition:opacity .15s;display:inline-block;}
+.start-btn:hover{opacity:.88;}
+.empty-state{text-align:center;padding:60px 20px;color:#9899B8;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.session-list{display:flex;flex-direction:column;gap:12px;}
+.session-row{background:#fff;border-radius:16px;padding:18px 22px;display:flex;align-items:center;gap:20px;border:1px solid #EBEBF5;transition:box-shadow .15s;}
+.session-row:hover{box-shadow:0 4px 20px rgba(60,47,142,.08);}
+.session-date-col{min-width:100px;}
+.session-date{font-size:14px;font-weight:600;color:#1A1235;}
+.session-time{font-size:11px;color:#9899B8;margin-top:2px;}
+.session-info{flex:1;}
+.att-mini-bar{height:6px;background:#F0EFF8;border-radius:10px;overflow:hidden;margin-bottom:6px;}
+.att-mini-fill{height:100%;border-radius:10px;transition:width .6s ease;}
+.session-stat{font-size:12px;color:#6B7280;}
+.session-status{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap;}
+.manage-btn{background:#7C4DFF;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;white-space:nowrap;transition:background .15s;}
+.manage-btn:hover{background:#6538E8;}
+.view-btn{background:#EDE8FF;color:#7C4DFF;text-decoration:none;font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;white-space:nowrap;transition:background .15s;}
+.view-btn:hover{background:#7C4DFF;color:#fff;}
+</style>
+}

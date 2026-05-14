@@ -1,0 +1,106 @@
+@{
+    string role = ViewBag.SidebarRole ?? "student";
+    string userName = Context.Session.GetString("UserName") ?? "User";
+    string initials = string.Join("", userName.Split(' ').Take(2).Select(w => w[0].ToString().ToUpper()));
+}
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="sb-logo-icon">
+            <svg viewBox="0 0 60 60" fill="none" width="28" height="28">
+                <rect x="13" y="7" width="28" height="36" rx="4" fill="white" opacity="0.4" />
+                <rect x="18" y="4" width="28" height="36" rx="4" fill="white" />
+                <path d="M24 16h16M24 23h16M24 30h11" stroke="#7C4DFF" stroke-width="2.5" stroke-linecap="round" />
+                <circle cx="46" cy="44" r="10" fill="white" />
+                <path d="M42 44l3 3 6-6" stroke="#7C4DFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </div>
+        <span class="sb-brand">smart<span>Mark</span></span>
+    </div>
+
+    @if (role == "student")
+    {
+        <nav class="sidebar-nav">
+            <a href="@Url.Action("Dashboard", "Student")"
+                   class="nav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                    <rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor" opacity="0.3" />
+                    <rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor" />
+                    <rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor" opacity="0.3" />
+                    <rect x="13" y="13" width="8" height="8" rx="2" fill="currentColor" opacity="0.3" />
+                </svg>
+                <span>My Classes</span>
+            </a>
+            <a href="@Url.Action("MyAttendance", "Student")"
+                   class="nav-link @(ViewData["ActivePage"]?.ToString() == "Attendance" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                    <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                <span>My Attendance</span>
+            </a>
+            <a href="@Url.Action("MySchedule", "Student")"
+                   class="nav-link @(ViewData["ActivePage"]?.ToString() == "Schedule" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                <span>My Schedule</span>
+            </a>
+        </nav>
+        <div class="sidebar-user">
+            <div class="user-avatar">@initials</div>
+            <div class="user-info">
+                <p class="user-name">@userName</p>
+                <p class="user-role">Student</p>
+            </div>
+            <a href="@Url.Action("Logout", "Home")" class="logout-btn" title="Sign out">
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </a>
+        </div>
+    }
+    else
+    {
+        <nav class="sidebar-nav">
+            <a href="@Url.Action("Dashboard", "Teacher")"
+                   class="nav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                    <rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor" opacity="0.3" />
+                    <rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor" />
+                    <rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor" opacity="0.3" />
+                    <rect x="13" y="13" width="8" height="8" rx="2" fill="currentColor" opacity="0.3" />
+                </svg>
+                <span>My Courses</span>
+            </a>
+            <a href="@Url.Action("Students", "Teacher")"
+                   class="nav-link @(ViewData["ActivePage"]?.ToString() == "Students" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                <span>Students</span>
+            </a>
+            <a href="@Url.Action("Schedule", "Teacher")"
+                   class="nav-link @(ViewData["ActivePage"]?.ToString() == "Schedule" ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                    <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                <span>Schedule</span>
+            </a>
+        </nav>
+        <div class="sidebar-user">
+            <div class="user-avatar teacher-av">@initials</div>
+            <div class="user-info">
+                <p class="user-name">@userName</p>
+                <p class="user-role">Teacher</p>
+            </div>
+            <a href="@Url.Action("Logout", "Home")" class="logout-btn" title="Sign out">
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </a>
+        </div>
+    }
+</aside>

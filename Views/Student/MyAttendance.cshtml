@@ -1,0 +1,172 @@
+﻿@model SmartMarkMVC.Models.StudentAttendanceOverviewViewModel
+@{
+    ViewData["Title"] = "My Attendance";
+    ViewData["ActivePage"] = "Attendance";
+    Layout = "_Layout";
+    ViewBag.SidebarRole = "student";
+}
+
+<div class="dash-wrapper">
+    @await Html.PartialAsync("_Sidebar")
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h2 class="page-title">My Attendance</h2>
+                <p class="page-sub">Overview across all your subjects</p>
+            </div>
+        </header>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="error-banner">⚠ @TempData["Error"]</div>
+        }
+
+        @* Summary Stats *@
+        @{
+            int totalBelow = Model.Subjects.Count(s => s.AttendancePercent < 75);
+            int totalGood  = Model.Subjects.Count(s => s.AttendancePercent >= 75);
+            double avg     = Model.Subjects.Any() ? Model.Subjects.Average(s => s.AttendancePercent) : 0;
+        }
+        <div class="stats-strip">
+            <div class="stat-card">
+                <span class="stat-num">@Model.Subjects.Count</span>
+                <span class="stat-lbl">Total Subjects</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" style="color:#059669">@totalGood</span>
+                <span class="stat-lbl">Good Standing</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" style="color:@(totalBelow > 0 ? "#E24B4A" : "#059669")">@totalBelow</span>
+                <span class="stat-lbl">Below 75%</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num">@avg.ToString("0")%</span>
+                <span class="stat-lbl">Overall Average</span>
+            </div>
+        </div>
+
+        @if (totalBelow > 0)
+        {
+            <div class="warning-banner">
+                ⚠ You have @totalBelow subject(s) with attendance below 75%. 
+                You are at risk of being short attended. Please attend classes regularly.
+            </div>
+        }
+
+        @if (!Model.Subjects.Any())
+        {
+            <div class="empty-state">No subjects found. Please contact your administrator.</div>
+        }
+        else
+        {
+            <div class="section-title-row">
+                <span class="section-title">Subject-wise Attendance</span>
+            </div>
+            <div class="att-cards">
+                @foreach (var s in Model.Subjects)
+                {
+                    string barColor   = s.AttendancePercent >= 75 ? "#059669" : s.AttendancePercent >= 60 ? "#E07C1A" : "#E24B4A";
+                    string cardBorder = s.AttendancePercent >= 75 ? "#059669" : "#E24B4A";
+                    string statusBg   = s.AttendancePercent >= 75 ? "#D1FAE5" : "#FEE2E2";
+                    string statusClr  = s.AttendancePercent >= 75 ? "#065F46" : "#991B1B";
+                    string statusTxt  = s.AttendancePercent >= 75 ? "✓ Good Standing" : "⚠ At Risk";
+                    int absent        = s.TotalSessions - s.AttendedSessions;
+
+                    <div class="att-card" style="border-left:4px solid @cardBorder">
+                        <div class="att-card-top">
+                            <div class="att-card-info">
+                                <p class="att-subj-name">@s.SubjectName</p>
+                                <p class="att-subj-meta">@s.SubjectCode · @s.TeacherName</p>
+                            </div>
+                            <span class="att-status-pill" style="background:@statusBg;color:@statusClr">
+                                @statusTxt
+                            </span>
+                        </div>
+
+                        <div class="att-pct-row">
+                            <span class="att-big-pct" style="color:@barColor">@s.AttendancePercent%</span>
+                            <div class="att-stats-mini">
+                                <span class="mini-stat"><span class="mini-val green">@s.AttendedSessions</span> Present</span>
+                                <span class="mini-stat"><span class="mini-val red">@absent</span> Absent</span>
+                                <span class="mini-stat"><span class="mini-val">@s.TotalSessions</span> Total</span>
+                            </div>
+                        </div>
+
+                        <div class="att-bar-full">
+                            <div class="att-bar-fill-full" style="width:@s.AttendancePercent%;background:@barColor"></div>
+                            <div class="att-threshold-line" title="75% required"></div>
+                        </div>
+                        <div class="att-bar-labels">
+                            <span style="font-size:10px;color:#9899B8">0%</span>
+                            <span style="font-size:10px;color:#9899B8;position:absolute;left:75%;transform:translateX(-50%)">75% min</span>
+                            <span style="font-size:10px;color:#9899B8">100%</span>
+                        </div>
+
+                        @if (s.AttendancePercent < 75 && s.TotalSessions > 0)
+                        {
+                            int needed = (int)Math.Ceiling((0.75 * s.TotalSessions - s.AttendedSessions) / 0.25);
+                            <p class="needed-msg">You need <strong>@needed more class(es)</strong> to reach 75%</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </main>
+</div>
+
+@section Styles {
+<style>
+* { box-sizing:border-box;margin:0;padding:0; }
+body { font-family:'Poppins',sans-serif;background:#F3F4FA;min-height:100vh; }
+.dash-wrapper{display:flex;min-height:100vh;}
+.sidebar{width:240px;flex-shrink:0;background:#fff;border-right:1px solid #EBEBF5;display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;bottom:0;}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid #F0EFF8;}
+.sb-logo-icon{width:40px;height:40px;background:#EDE8FF;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.sb-brand{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:#3D2F8E;}
+.sb-brand span{color:#7C4DFF;}
+.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;}
+.nav-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;text-decoration:none;color:#6B7280;font-size:14px;font-weight:500;transition:background .15s,color .15s;}
+.nav-link:hover{background:#F5F3FF;color:#7C4DFF;}
+.nav-link.active{background:#EDE8FF;color:#7C4DFF;font-weight:600;}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:16px 20px 0;border-top:1px solid #F0EFF8;margin-top:auto;}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C4DFF,#B47FFF);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:600;color:#1A1235;}
+.user-role{font-size:11px;color:#9899B8;}
+.logout-btn{margin-left:auto;color:#9899B8;text-decoration:none;display:flex;transition:color .15s;}
+.logout-btn:hover{color:#E24B4A;}
+.main-content{margin-left:240px;flex:1;padding:28px 32px;animation:fadeIn .5s ease both;}
+@@keyframes fadeIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+.topbar{display:flex;align-items:center;margin-bottom:24px;}
+.page-title{font-size:22px;font-weight:700;color:#1A1235;}
+.page-sub{font-size:12px;color:#9899B8;margin-top:2px;}
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.stat-card{background:#fff;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:4px;border:1px solid #EBEBF5;}
+.stat-num{font-size:26px;font-weight:800;color:#1A1235;font-family:'Nunito',sans-serif;}
+.stat-lbl{font-size:11px;color:#9899B8;font-weight:500;}
+.warning-banner{background:#FEF3C7;border:1px solid #FCD34D;border-radius:12px;padding:12px 16px;font-size:13px;color:#92400E;margin-bottom:20px;}
+.error-banner{background:#FEE2E2;border:1px solid #FCA5A5;border-radius:12px;padding:12px 16px;font-size:13px;color:#991B1B;margin-bottom:20px;}
+.empty-state{text-align:center;padding:60px;color:#9899B8;font-size:14px;}
+.section-title-row{margin-bottom:16px;}
+.section-title{font-size:15px;font-weight:700;color:#1A1235;}
+.att-cards{display:flex;flex-direction:column;gap:16px;}
+.att-card{background:#fff;border-radius:16px;padding:22px 24px;border:1px solid #EBEBF5;transition:box-shadow .15s;}
+.att-card:hover{box-shadow:0 4px 20px rgba(60,47,142,.08);}
+.att-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+.att-subj-name{font-size:15px;font-weight:700;color:#1A1235;margin-bottom:4px;}
+.att-subj-meta{font-size:12px;color:#9899B8;}
+.att-status-pill{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.att-pct-row{display:flex;align-items:center;gap:24px;margin-bottom:14px;}
+.att-big-pct{font-size:40px;font-weight:900;font-family:'Nunito',sans-serif;line-height:1;}
+.att-stats-mini{display:flex;gap:16px;}
+.mini-stat{font-size:12px;color:#6B7280;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.mini-val{font-size:18px;font-weight:800;font-family:'Nunito',sans-serif;color:#1A1235;}
+.mini-val.green{color:#059669;}
+.mini-val.red{color:#E24B4A;}
+.att-bar-full{height:8px;background:#F0EFF8;border-radius:10px;overflow:hidden;margin-bottom:4px;position:relative;}
+.att-bar-fill-full{height:100%;border-radius:10px;transition:width .8s ease;}
+.att-threshold-line{position:absolute;top:0;left:75%;width:2px;height:100%;background:#9899B8;opacity:.5;}
+.att-bar-labels{display:flex;justify-content:space-between;position:relative;margin-bottom:10px;}
+.needed-msg{font-size:12px;color:#E07C1A;background:#FEF3C7;padding:8px 12px;border-radius:10px;margin-top:8px;}
+</style>
+}

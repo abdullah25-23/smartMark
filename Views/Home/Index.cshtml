@@ -1,0 +1,169 @@
+@{
+    ViewData["Title"] = "SmartMark";
+    Layout = "_Layout";
+}
+
+<div class="splash-wrapper" id="splash">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="spark-field" id="sparkField"></div>
+
+    <div class="splash-content">
+        <div class="logo-card" id="logoCard">
+            <div class="logo-icon">
+                <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8"  y="10" width="28" height="36" rx="4" fill="#F59E0B" opacity="0.25"/>
+                    <rect x="13" y="7"  width="28" height="36" rx="4" fill="#E07C1A" opacity="0.55"/>
+                    <rect x="18" y="4"  width="28" height="36" rx="4" fill="#BA7517"/>
+                    <path d="M24 16h16M24 23h16M24 30h11" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="46" cy="44" r="10" fill="#FFF7ED"/>
+                    <path d="M42 44l3 3 6-6" stroke="#E07C1A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <h1 class="brand-name">
+            <span class="brand-dark">smart</span><span class="brand-accent">Mark</span>
+        </h1>
+        <p class="brand-tagline">Your smart classroom companion</p>
+
+        <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p class="loading-text" id="loadingText">Loading...</p>
+    </div>
+</div>
+
+<div class="transition-overlay" id="overlay"></div>
+
+@section Styles {
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { overflow:hidden; font-family:'Poppins',sans-serif; }
+
+.splash-wrapper {
+    width:100vw; height:100vh;
+    background:linear-gradient(145deg,#FFF7ED 0%,#FEEBC8 40%,#FDE68A 100%);
+    display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+}
+
+.orb { position:absolute; border-radius:50%; animation:floatOrb 6s ease-in-out infinite; }
+.orb-1 { width:340px;height:340px; background:radial-gradient(circle,rgba(251,191,36,.35) 0%,transparent 70%); top:-100px;right:-80px; animation-delay:0s; }
+.orb-2 { width:260px;height:260px; background:radial-gradient(circle,rgba(245,158,11,.25) 0%,transparent 70%); bottom:-60px;left:-60px; animation-delay:2s; }
+.orb-3 { width:180px;height:180px; background:radial-gradient(circle,rgba(252,211,77,.3) 0%,transparent 70%); top:50%;left:10%; animation-delay:4s; }
+
+@@keyframes floatOrb {
+    0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-20px) scale(1.05)}
+}
+
+.spark-field { position:absolute; inset:0; pointer-events:none; }
+.spark {
+    position:absolute; border-radius:50%; opacity:0;
+    animation:sparkFloat linear infinite;
+}
+@@keyframes sparkFloat {
+    0%{opacity:0;transform:translateY(0) scale(0)}
+    10%{opacity:.8;transform:translateY(-10px) scale(1)}
+    90%{opacity:.4;transform:translateY(-130px) scale(.5)}
+    100%{opacity:0;transform:translateY(-150px) scale(0)}
+}
+
+.splash-content { display:flex;flex-direction:column;align-items:center;position:relative;z-index:10; }
+
+.logo-card {
+    width:100px;height:100px; background:#fff; border-radius:28px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 20px 60px rgba(186,117,23,.25),0 4px 16px rgba(0,0,0,.08);
+    margin-bottom:24px;
+    animation:popIn .7s cubic-bezier(.34,1.56,.64,1) .2s both;
+}
+.logo-icon svg { width:62px;height:62px; }
+
+@@keyframes popIn {
+    0%{opacity:0;transform:scale(.4) rotate(-10deg)}
+    100%{opacity:1;transform:scale(1) rotate(0deg)}
+}
+
+.brand-name {
+    font-family:'Nunito',sans-serif; font-size:48px; font-weight:900;
+    letter-spacing:-1px; line-height:1; margin-bottom:10px;
+    animation:slideUp .6s cubic-bezier(.34,1.4,.64,1) .6s both;
+}
+.brand-dark  { color:#7A4500; }
+.brand-accent{ color:#E07C1A; }
+
+.brand-tagline {
+    font-size:14px;color:#B97028;font-weight:500;letter-spacing:.3px;margin-bottom:36px;
+    animation:slideUp .6s cubic-bezier(.34,1.4,.64,1) .8s both;
+}
+
+@@keyframes slideUp {
+    0%{opacity:0;transform:translateY(24px)} 100%{opacity:1;transform:translateY(0)}
+}
+
+.progress-bar-wrap {
+    width:200px;height:5px;background:rgba(186,117,23,.2);border-radius:10px;
+    overflow:hidden;margin-bottom:12px;animation:fadeIn .4s ease 1s both;
+}
+.progress-bar { height:100%;width:0%;background:linear-gradient(90deg,#E07C1A,#F59E0B);border-radius:10px;transition:width .1s linear; }
+
+.loading-text { font-size:12px;color:#B97028;font-weight:500;animation:fadeIn .4s ease 1s both; }
+
+@@keyframes fadeIn { 0%{opacity:0} 100%{opacity:1} }
+
+.transition-overlay {
+    position:fixed;inset:0;background:#6C3FD6;
+    transform:scaleY(0);transform-origin:bottom;z-index:1000;
+    transition:transform .55s cubic-bezier(.76,0,.24,1);
+}
+.transition-overlay.slide-in { transform:scaleY(1); }
+</style>
+}
+
+@section Scripts {
+<script>
+(function(){
+    var field = document.getElementById('sparkField');
+    var colors = ['#E07C1A','#F59E0B','#FCD34D','#FBBF24'];
+    for(var i=0;i<24;i++){
+        var s=document.createElement('div');
+        s.className='spark';
+        s.style.left=Math.random()*100+'%';
+        s.style.top=(35+Math.random()*40)+'%';
+        var dur=2.5+Math.random()*3;
+        s.style.animationDuration=dur+'s';
+        s.style.animationDelay=(Math.random()*3)+'s';
+        var sz=(3+Math.random()*5)+'px';
+        s.style.width=s.style.height=sz;
+        s.style.background=colors[Math.floor(Math.random()*4)];
+        field.appendChild(s);
+    }
+
+    var bar=document.getElementById('progressBar');
+    var txt=document.getElementById('loadingText');
+    var msgs=['Loading...','Setting up...','Almost ready!'];
+    var msgIdx=0;
+    var total=3200;
+    var start=performance.now();
+
+    function tick(now){
+        var elapsed=now-start;
+        var pct=Math.min(100,(elapsed/total)*100);
+        bar.style.width=pct+'%';
+        var ni=pct<40?0:pct<80?1:2;
+        if(ni!==msgIdx){ msgIdx=ni; txt.textContent=msgs[msgIdx]; }
+        if(pct<100){ requestAnimationFrame(tick); }
+        else{
+            setTimeout(function(){
+                var ov=document.getElementById('overlay');
+                ov.classList.add('slide-in');
+                setTimeout(function(){ window.location.href='@Url.Action("Login","Home")'; },580);
+            },200);
+        }
+    }
+    requestAnimationFrame(tick);
+})();
+</script>
+}

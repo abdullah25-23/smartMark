@@ -1,0 +1,112 @@
+﻿@model List<SmartMarkMVC.Models.ScheduleViewModel>
+@{
+    ViewData["Title"] = "Class Schedule";
+    ViewData["ActivePage"] = "Schedule";
+    Layout = "_Layout";
+    ViewBag.SidebarRole = "teacher";
+    var days = new[] { "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday" };
+}
+
+<div class="dash-wrapper">
+    @await Html.PartialAsync("_Sidebar")
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h2 class="page-title">Class Schedule</h2>
+                <p class="page-sub">Your weekly class timetable</p>
+            </div>
+        </header>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="error-banner">⚠ @TempData["Error"]</div>
+        }
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">No schedules found. Ask your administrator to add schedules to the database.</div>
+        }
+        else
+        {
+            @foreach (var day in days)
+            {
+                var dayClasses = Model.Where(s => s.DayOfWeek == day).ToList();
+                if (!dayClasses.Any()) continue;
+
+                <div class="day-group">
+                    <div class="day-label">@day</div>
+                    <div class="schedule-list">
+                        @foreach (var sc in dayClasses)
+                        {
+                            <div class="schedule-row @(sc.IsRescheduled ? "rescheduled" : "")">
+                                <div class="time-col">
+                                    <p class="time-start">@sc.StartTime</p>
+                                    <p class="time-end">@sc.EndTime</p>
+                                </div>
+                                <div class="sched-info">
+                                    <p class="sched-name">@sc.SubjectName <span class="sched-code">(@sc.SubjectCode)</span></p>
+                                    @if (!string.IsNullOrEmpty(sc.MeetingLink))
+                                    {
+                                        <a href="@sc.MeetingLink" target="_blank" class="meet-link">
+                                            🔗 Google Classroom
+                                        </a>
+                                    }
+                                </div>
+                                @if (sc.IsRescheduled)
+                                {
+                                    <span class="reschedule-badge">Rescheduled</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </main>
+</div>
+
+@section Styles {
+<style>
+* { box-sizing:border-box;margin:0;padding:0; }
+body { font-family:'Poppins',sans-serif;background:#F3F4FA;min-height:100vh; }
+.dash-wrapper{display:flex;min-height:100vh;}
+.sidebar{width:240px;flex-shrink:0;background:#fff;border-right:1px solid #EBEBF5;display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;bottom:0;}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid #F0EFF8;}
+.sb-logo-icon{width:40px;height:40px;background:#EDE8FF;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.sb-brand{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:#3D2F8E;}
+.sb-brand span{color:#7C4DFF;}
+.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;}
+.nav-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;text-decoration:none;color:#6B7280;font-size:14px;font-weight:500;transition:background .15s,color .15s;}
+.nav-link:hover{background:#F5F3FF;color:#7C4DFF;}
+.nav-link.active{background:#EDE8FF;color:#7C4DFF;font-weight:600;}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:16px 20px 0;border-top:1px solid #F0EFF8;margin-top:auto;}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C4DFF,#B47FFF);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.teacher-av{background:linear-gradient(135deg,#1D4ED8,#60A5FA)!important;}
+.user-name{font-size:13px;font-weight:600;color:#1A1235;}
+.user-role{font-size:11px;color:#9899B8;}
+.logout-btn{margin-left:auto;color:#9899B8;text-decoration:none;display:flex;transition:color .15s;}
+.logout-btn:hover{color:#E24B4A;}
+.main-content{margin-left:240px;flex:1;padding:28px 32px;animation:fadeIn .5s ease both;}
+@@keyframes fadeIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+.topbar{display:flex;align-items:center;margin-bottom:28px;}
+.page-title{font-size:22px;font-weight:700;color:#1A1235;}
+.page-sub{font-size:12px;color:#9899B8;margin-top:2px;}
+.error-banner{background:#FEE2E2;border:1px solid #FCA5A5;border-radius:12px;padding:12px 16px;font-size:13px;color:#991B1B;margin-bottom:20px;}
+.empty-state{text-align:center;padding:60px;color:#9899B8;font-size:14px;}
+.day-group{margin-bottom:24px;}
+.day-label{font-size:13px;font-weight:700;color:#7C4DFF;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-left:4px;}
+.schedule-list{display:flex;flex-direction:column;gap:10px;}
+.schedule-row{background:#fff;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:20px;border:1px solid #EBEBF5;transition:box-shadow .15s;}
+.schedule-row:hover{box-shadow:0 4px 16px rgba(60,47,142,.08);}
+.schedule-row.rescheduled{border-left:3px solid #E07C1A;}
+.time-col{min-width:70px;text-align:center;}
+.time-start{font-size:14px;font-weight:700;color:#1A1235;}
+.time-end{font-size:11px;color:#9899B8;margin-top:2px;}
+.sched-info{flex:1;}
+.sched-name{font-size:14px;font-weight:600;color:#1A1235;margin-bottom:4px;}
+.sched-code{font-size:12px;font-weight:400;color:#9899B8;}
+.meet-link{font-size:12px;color:#7C4DFF;text-decoration:none;font-weight:500;}
+.meet-link:hover{text-decoration:underline;}
+.reschedule-badge{font-size:11px;font-weight:600;background:#FEF3C7;color:#92400E;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+</style>
+}

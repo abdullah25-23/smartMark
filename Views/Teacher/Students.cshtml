@@ -1,0 +1,123 @@
+﻿@model SmartMarkMVC.Models.TeacherStudentsViewModel
+@{
+    ViewData["Title"] = "My Students";
+    ViewData["ActivePage"] = "Students";
+    Layout = "_Layout";
+    ViewBag.SidebarRole = "teacher";
+}
+
+<div class="dash-wrapper">
+    @await Html.PartialAsync("_Sidebar")
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h2 class="page-title">My Students</h2>
+                <p class="page-sub">Attendance overview per subject</p>
+            </div>
+        </header>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="error-banner">⚠ @TempData["Error"]</div>
+        }
+
+        @if (!Model.SubjectGroups.Any())
+        {
+            <div class="empty-state">No students enrolled in your subjects yet.</div>
+        }
+        else
+        {
+            @foreach (var group in Model.SubjectGroups.Values)
+            {
+                <div class="subject-group">
+                    <div class="group-header">
+                        <span class="group-title">@group.SubjectName</span>
+                        <span class="group-code">@group.SubjectCode</span>
+                        <span class="group-count">@group.Students.Count students</span>
+                    </div>
+                    <div class="student-table">
+                        <div class="table-head">
+                            <span>Roll No</span>
+                            <span>Name</span>
+                            <span>Section</span>
+                            <span>Sessions</span>
+                            <span>Attended</span>
+                            <span>Attendance</span>
+                            <span>Status</span>
+                        </div>
+                        @foreach (var s in group.Students)
+                        {
+                            string barColor = s.AttendancePercent >= 75 ? "#059669" : s.AttendancePercent >= 60 ? "#E07C1A" : "#E24B4A";
+                            string statusBg = s.AttendancePercent >= 75 ? "#D1FAE5" : "#FEE2E2";
+                            string statusColor = s.AttendancePercent >= 75 ? "#065F46" : "#991B1B";
+                            string statusText = s.AttendancePercent >= 75 ? "Good" : "At Risk";
+                            <div class="table-row">
+                                <span class="roll-num">@s.RollNumber</span>
+                                <span class="stu-name">@s.StudentName</span>
+                                <span>@s.Section</span>
+                                <span>@s.TotalSessions</span>
+                                <span>@s.AttendedSessions</span>
+                                <span>
+                                    <div class="mini-bar-wrap">
+                                        <div class="mini-bar-track">
+                                            <div class="mini-bar-fill" style="width:@s.AttendancePercent%;background:@barColor"></div>
+                                        </div>
+                                        <span class="mini-pct" style="color:@barColor">@s.AttendancePercent%</span>
+                                    </div>
+                                </span>
+                                <span class="status-pill" style="background:@statusBg;color:@statusColor">@statusText</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </main>
+</div>
+
+@section Styles {
+    <style>
+        * { box-sizing:border-box;margin:0;padding:0; }
+        body { font-family:'Poppins',sans-serif;background:#F3F4FA;min-height:100vh; }
+        .dash-wrapper{display:flex;min-height:100vh;}
+        .sidebar{width:240px;flex-shrink:0;background:#fff;border-right:1px solid #EBEBF5;display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;bottom:0;}
+        .sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid #F0EFF8;}
+        .sb-logo-icon{width:40px;height:40px;background:#EDE8FF;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+        .sb-brand{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:#3D2F8E;}
+        .sb-brand span{color:#7C4DFF;}
+        .sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;}
+        .nav-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;text-decoration:none;color:#6B7280;font-size:14px;font-weight:500;transition:background .15s,color .15s;}
+        .nav-link:hover{background:#F5F3FF;color:#7C4DFF;}
+        .nav-link.active{background:#EDE8FF;color:#7C4DFF;font-weight:600;}
+        .sidebar-user{display:flex;align-items:center;gap:10px;padding:16px 20px 0;border-top:1px solid #F0EFF8;margin-top:auto;}
+        .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C4DFF,#B47FFF);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+        .teacher-av{background:linear-gradient(135deg,#1D4ED8,#60A5FA)!important;}
+        .user-name{font-size:13px;font-weight:600;color:#1A1235;}
+        .user-role{font-size:11px;color:#9899B8;}
+        .logout-btn{margin-left:auto;color:#9899B8;text-decoration:none;display:flex;transition:color .15s;}
+        .logout-btn:hover{color:#E24B4A;}
+        .main-content{margin-left:240px;flex:1;padding:28px 32px;animation:fadeIn .5s ease both;}
+        @@keyframes fadeIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+        .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+        .page-title{font-size:22px;font-weight:700;color:#1A1235;}
+        .page-sub{font-size:12px;color:#9899B8;margin-top:2px;}
+        .error-banner{background:#FEE2E2;border:1px solid #FCA5A5;border-radius:12px;padding:12px 16px;font-size:13px;color:#991B1B;margin-bottom:20px;}
+        .empty-state{text-align:center;padding:60px;color:#9899B8;font-size:14px;}
+        .subject-group{margin-bottom:28px;}
+        .group-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+        .group-title{font-size:16px;font-weight:700;color:#1A1235;}
+        .group-code{font-size:12px;color:#9899B8;background:#F3F4FA;padding:3px 10px;border-radius:20px;}
+        .group-count{font-size:12px;color:#7C4DFF;background:#EDE8FF;padding:3px 10px;border-radius:20px;margin-left:auto;}
+        .student-table{background:#fff;border-radius:16px;border:1px solid #EBEBF5;overflow:hidden;}
+        .table-head{display:grid;grid-template-columns:120px 1fr 80px 80px 80px 160px 80px;gap:12px;padding:12px 20px;background:#F8F8FC;font-size:11px;font-weight:600;color:#9899B8;text-transform:uppercase;letter-spacing:.5px;}
+        .table-row{display:grid;grid-template-columns:120px 1fr 80px 80px 80px 160px 80px;gap:12px;padding:14px 20px;border-top:1px solid #F5F5FA;align-items:center;font-size:13px;color:#374151;transition:background .15s;}
+        .table-row:hover{background:#FAFAFA;}
+        .roll-num{font-family:monospace;font-size:12px;color:#7C4DFF;font-weight:600;}
+        .stu-name{font-weight:600;color:#1A1235;}
+        .mini-bar-wrap{display:flex;align-items:center;gap:8px;}
+        .mini-bar-track{flex:1;height:5px;background:#F0EFF8;border-radius:10px;overflow:hidden;}
+        .mini-bar-fill{height:100%;border-radius:10px;}
+        .mini-pct{font-size:11px;font-weight:700;min-width:34px;}
+        .status-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;display:inline-block;}
+    </style>
+}

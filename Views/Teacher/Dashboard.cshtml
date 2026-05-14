@@ -1,0 +1,465 @@
+@model SmartMarkMVC.Models.TeacherDashboardViewModel
+@{
+    ViewData["Title"] = "Teacher Dashboard";
+    ViewData["ActivePage"] = "Dashboard";
+    Layout = "_Layout";
+    ViewBag.SidebarRole = "teacher";
+}
+
+<div class="dash-wrapper">
+    @await Html.PartialAsync("_Sidebar")
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h2 class="page-title">Welcome, @Model.TeacherName 👋</h2>
+                <p class="page-sub">@DateTime.Now.ToString("dddd, MMMM dd, yyyy") · Spring Semester</p>
+            </div>
+            <div class="topbar-right">
+                <div class="notif-btn" id="notifBtn">
+                    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="#6B7280" stroke-width="1.6" stroke-linecap="round" /></svg>
+                </div>
+            </div>
+        </header>
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="success-banner">✓ @TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="error-banner">⚠ @TempData["Error"]</div>
+        }
+        <div class="stats-strip">
+            <div class="stat-card">
+                <span class="stat-num">@Model.TotalSubjects</span>
+                <span class="stat-lbl">My Courses</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num">@Model.TotalStudents</span>
+                <span class="stat-lbl">Total Students</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" style="color:#059669">Active</span>
+                <span class="stat-lbl">Semester Status</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" style="color:#7C4DFF">Spring</span>
+                <span class="stat-lbl">Current Term</span>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <span class="section-title">My Courses</span>
+            <span class="section-count">@Model.TotalSubjects / 4 courses</span>
+        </div>
+
+        <div class="teacher-class-list">
+            @foreach (var s in Model.Subjects)
+            {
+                <div class="tc-row">
+                    <div class="tc-color-bar" style="background:@s.BarColor"></div>
+                    <div class="tc-info">
+                        <p class="tc-name">@s.SubjectName <span class="tc-code">(@s.SubjectCode)</span></p>
+                        <p class="tc-meta">@s.TotalStudents students enrolled</p>
+                    </div>
+                    <span class="tc-badge" style="background:@s.BadgeBg;color:@s.BadgeColor">@s.BadgeText</span>
+                    <a href="@Url.Action("AttendanceSessions", "Teacher", new { subjectId = s.SubjectId })" class="tc-btn">Attendance</a>
+                    <a href="@Url.Action("StartSession", "Teacher", new { subjectId = s.SubjectId })" class="tc-btn start-btn">▶ Start Class</a>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+<div class="transition-overlay" id="overlay"></div>
+
+@section Styles {
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins',sans-serif;
+            background: #F3F4FA;
+            min-height: 100vh;
+        }
+
+        .dash-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            background: #fff;
+            border-right: 1px solid #EBEBF5;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+        }
+
+        @@keyframes slideInLeft {
+            0% {
+                opacity: 0;
+                transform: translateX(-40px)
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0)
+            }
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 20px 24px;
+            border-bottom: 1px solid #F0EFF8;
+        }
+
+        .sb-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: #EDE8FF;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sb-brand {
+            font-family: 'Nunito',sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: #3D2F8E;
+        }
+
+            .sb-brand span {
+                color: #7C4DFF;
+            }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #6B7280;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background .15s,color .15s;
+        }
+
+            .nav-link:hover {
+                background: #F5F3FF;
+                color: #7C4DFF;
+            }
+
+            .nav-link.active {
+                background: #EDE8FF;
+                color: #7C4DFF;
+                font-weight: 600;
+            }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 20px 0;
+            border-top: 1px solid #F0EFF8;
+            margin-top: auto;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg,#7C4DFF,#B47FFF);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .teacher-av {
+            background: linear-gradient(135deg,#1D4ED8,#60A5FA) !important;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1A1235;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: #9899B8;
+        }
+
+        .logout-btn {
+            margin-left: auto;
+            color: #9899B8;
+            text-decoration: none;
+            display: flex;
+            transition: color .15s;
+        }
+
+            .logout-btn:hover {
+                color: #E24B4A;
+            }
+
+        .main-content {
+            margin-left: 240px;
+            flex: 1;
+            padding: 28px 32px;
+            animation: fadeInMain .5s ease .1s both;
+        }
+
+        @@keyframes fadeInMain {
+            0% {
+                opacity: 0;
+                transform: translateY(12px)
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1A1235;
+        }
+
+        .page-sub {
+            font-size: 12px;
+            color: #9899B8;
+            margin-top: 2px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .notif-btn {
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 1px solid #EBEBF5;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .success-banner {
+            background: #D1FAE5;
+            border: 1px solid #6EE7B7;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #065F46;
+            margin-bottom: 20px;
+        }
+
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border: 1px solid #EBEBF5;
+        }
+
+        .stat-num {
+            font-size: 26px;
+            font-weight: 800;
+            color: #1A1235;
+            font-family: 'Nunito',sans-serif;
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: #9899B8;
+            font-weight: 500;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1A1235;
+        }
+
+        .section-count {
+            font-size: 12px;
+            color: #9899B8;
+            background: #F3F4FA;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .teacher-class-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tc-row {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid #EBEBF5;
+            transition: box-shadow .15s;
+        }
+
+            .tc-row:hover {
+                box-shadow: 0 4px 20px rgba(60,47,142,.1);
+            }
+
+        .tc-color-bar {
+            width: 4px;
+            height: 40px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .tc-info {
+            flex: 1;
+        }
+
+        .tc-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1A1235;
+            margin-bottom: 2px;
+        }
+
+        .tc-code {
+            font-size: 12px;
+            font-weight: 400;
+            color: #9899B8;
+        }
+
+        .tc-meta {
+            font-size: 11px;
+            color: #9899B8;
+        }
+
+        .tc-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .tc-btn {
+            background: #EDE8FF;
+            color: #7C4DFF;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 10px;
+            white-space: nowrap;
+            transition: background .15s,color .15s;
+        }
+
+            .tc-btn:hover {
+                background: #7C4DFF;
+                color: #fff;
+            }
+
+        .start-btn {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+            .start-btn:hover {
+                background: #059669;
+                color: #fff;
+            }
+
+        .transition-overlay {
+            position: fixed;
+            inset: 0;
+            background: #7C4DFF;
+            transform: scaleY(0);
+            transform-origin: bottom;
+            z-index: 1000;
+            transition: transform .5s cubic-bezier(.76,0,.24,1);
+        }
+
+            .transition-overlay.active {
+                transform: scaleY(1);
+            }
+            .error-banner{background:#FEE2E2;border:1px solid #FCA5A5;border-radius:12px;
+    padding:12px 16px;font-size:13px;color:#991B1B;margin-bottom:20px;}
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.js-nav').forEach(function(el){
+            el.addEventListener('click',function(e){
+                e.preventDefault();
+                var href=this.getAttribute('href');
+                document.getElementById('overlay').classList.add('active');
+                setTimeout(function(){window.location.href=href;},520);
+            });
+        });
+    </script>
+}
